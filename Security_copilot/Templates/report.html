@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Security Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Security Assessment Report</h1>
+
+  <p><b>LLM Output Mode:</b> {{ llm_output.mode }}</p>
+  <p><b>LLM Debug:</b> {{ llm_output.debug_reason }}</p>
+
+  <h2>Organisation Profile</h2>
+  <table border="1" cellpadding="8">
+    <tr><th>Organisation</th><td>{{ org_profile.org_name }}</td></tr>
+    <tr><th>Sector</th><td>{{ org_profile.sector }}</td></tr>
+    <tr><th>Company Size</th><td>{{ org_profile.size }}</td></tr>
+    <tr><th>Internal IT Team</th><td>{{ org_profile.it_team }}</td></tr>
+    <tr><th>Dedicated Security Staff</th><td>{{ org_profile.security_staff }}</td></tr>
+    <tr><th>Web Application Type</th><td>{{ org_profile.web_app_type }}</td></tr>
+    <tr><th>Stores Customer Data</th><td>{{ org_profile.stores_customer_data }}</td></tr>
+    <tr><th>Processes Payments</th><td>{{ org_profile.processes_payments }}</td></tr>
+    <tr><th>Uses Cloud Hosting</th><td>{{ org_profile.uses_cloud }}</td></tr>
+    <tr><th>Uses Third-Party Support</th><td>{{ org_profile.uses_third_party_support }}</td></tr>
+  </table>
+
+  <hr>
+
+  <h2>Overall Risk Level: {{ results.overall_level }}</h2>
+  <p><b>Overall Risk Exposure:</b> {{ results.overall_percent }}%</p>
+  <p><b>ASVS Level 1 Controls Satisfied (Proxy):</b> {{ results.asvs_compliance_percent }}%</p>
+
+  <hr>
+
+  <h2>Tailored Executive Summary</h2>
+  <p>{{ llm_output.executive_summary }}</p>
+
+  <h2>Business Impact</h2>
+  <p>{{ llm_output.business_impact }}</p>
+
+  <h2>Priority Recommendations</h2>
+  {% if llm_output.priority_recommendations %}
+    <ul>
+      {% for item in llm_output.priority_recommendations %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Recommendations are included in the executive summary.</p>
+  {% endif %}
+
+  <h2>Quick Wins</h2>
+  {% if llm_output.quick_wins %}
+    <ul>
+      {% for item in llm_output.quick_wins %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No quick wins were generated separately.</p>
+  {% endif %}
+
+  <h2>Longer-Term Improvements</h2>
+  {% if llm_output.long_term_improvements %}
+    <ul>
+      {% for item in llm_output.long_term_improvements %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No longer-term improvements were generated separately.</p>
+  {% endif %}
+
+  <hr>
+
+  <h2>OWASP Risk Exposure (Bar Chart)</h2>
+  <canvas id="riskChart" width="900" height="400"></canvas>
+
+  <script>
+    const labels = {{ chart_labels | tojson }};
+    const values = {{ chart_values | tojson }};
+
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Risk Exposure (%)',
+          data: values
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: { display: true, text: 'Risk Exposure (%)' }
+          },
+          x: {
+            title: { display: true, text: 'OWASP Category' }
+          }
+        }
+      }
+    });
+  </script>
+
+  <hr>
+
+  <h2>OWASP Risk Breakdown</h2>
+  <table border="1" cellpadding="8">
+    <tr>
+      <th>OWASP Category</th>
+      <th>Risk Exposure (%)</th>
+      <th>Risk Level</th>
+    </tr>
+    {% for cat in results.category_results %}
+    <tr>
+      <td>{{ cat.owasp }}</td>
+      <td>{{ cat.percent }}</td>
+      <td>{{ cat.level }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <hr>
+
+  <h2>Recommended Remediation Actions</h2>
+  {% if results.remediation_actions|length == 0 %}
+    <p>No critical remediation actions required. Your controls appear strong.</p>
+  {% else %}
+    <table border="1" cellpadding="8">
+      <tr>
+        <th>Priority</th>
+        <th>Question</th>
+        <th>OWASP Category</th>
+        <th>Recommended Action</th>
+      </tr>
+      {% for item in results.remediation_actions %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item.question }}</td>
+        <td>{{ item.owasp }}</td>
+        <td>{{ item.remediation }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+
+  <hr>
+
+  <h2>AI Guidance (Top 3 Risks)</h2>
+  {% for guidance in ai_guidance %}
+    <pre style="background:#f4f4f4;padding:10px;">{{ guidance }}</pre>
+  {% endfor %}
+
+  <hr>
+
+  <p>
+    <a href="/download_pdf">Download PDF Report</a>
+  </p>
+
+  <a href="/">Run Another Assessment</a>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SME Security Co-pilot</title>
+</head>
+<body>
+  <h1>SME Web Application Security Co-pilot</h1>
+  <p>Complete the organisation profile first, then answer the security questions below.</p>
+
+  <form method="POST" action="/analyze">
+
+    <h2>Organisation Profile</h2>
+    <hr>
+
+    <p><b>Organisation Name / Label</b></p>
+    <input type="text" name="org_name" placeholder="Example: ABC Retail Ltd" required>
+    <br><br>
+
+    <p><b>Business Sector</b></p>
+    <select name="sector" required>
+      <option value="">Select sector</option>
+      <option value="E-commerce">E-commerce</option>
+      <option value="Accounting">Accounting</option>
+      <option value="Healthcare">Healthcare</option>
+      <option value="Logistics">Logistics</option>
+      <option value="Charity">Charity</option>
+      <option value="Real Estate">Real Estate</option>
+      <option value="Education">Education</option>
+      <option value="Technology / SaaS">Technology / SaaS</option>
+      <option value="Other">Other</option>
+    </select>
+    <br><br>
+
+    <p><b>Company Size</b></p>
+    <select name="size" required>
+      <option value="">Select size</option>
+      <option value="1-10 employees">1-10 employees</option>
+      <option value="11-50 employees">11-50 employees</option>
+      <option value="51-250 employees">51-250 employees</option>
+      <option value="251+ employees">251+ employees</option>
+    </select>
+    <br><br>
+
+    <p><b>Do you have an internal IT team?</b></p>
+    <select name="it_team" required>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <br><br>
+
+    <p><b>Do you have dedicated security staff?</b></p>
+    <select name="security_staff" required>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <br><br>
+
+    <p><b>Web Application Type</b></p>
+    <select name="web_app_type" required>
+      <option value="">Select type</option>
+      <option value="Public website">Public website</option>
+      <option value="Customer portal">Customer portal</option>
+      <option value="E-commerce platform">E-commerce platform</option>
+      <option value="Booking system">Booking system</option>
+      <option value="Internal admin portal">Internal admin portal</option>
+      <option value="SaaS application">SaaS application</option>
+      <option value="Other">Other</option>
+    </select>
+    <br><br>
+
+    <p><b>Does the application store customer data?</b></p>
+    <select name="stores_customer_data" required>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <br><br>
+
+    <p><b>Does the application process online payments?</b></p>
+    <select name="processes_payments" required>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <br><br>
+
+    <p><b>Does the organisation use cloud hosting?</b></p>
+    <select name="uses_cloud" required>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <br><br>
+
+    <p><b>Does the organisation rely on third-party web developers or managed providers?</b></p>
+    <select name="uses_third_party_support" required>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <br><br>
+
+    {% for section, qs in sections.items() %}
+      <h2>{{ section }}</h2>
+      <hr>
+
+      {% for q in qs %}
+        <p><b>{{ q.id }}</b> — {{ q.text }}</p>
+        <select name="{{ q.id }}" required>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+          <option value="not_sure" selected>Not Sure</option>
+          <option value="managed">Managed by provider</option>
+        </select>
+        <br><br>
+      {% endfor %}
+    {% endfor %}
+
+    <button type="submit">Generate Security Report</button>
+  </form>
+</body>
+</html>
