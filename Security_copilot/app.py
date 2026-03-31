@@ -5,10 +5,13 @@ from ai_module import generate_ai_explanation
 from pdf_report import build_pdf_report
 from llm_module import generate_tailored_llm_output
 import os
+import uuid
 
 app = Flask(__name__, template_folder="Templates", static_folder="Static")
-
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-only-secret-key-change-me")
+
+# Simple in-memory report store for current session runs
+REPORT_CACHE = {}
 
 
 def extract_org_profile(form_data):
@@ -40,7 +43,6 @@ def analyze():
     results = compute_scores(QUESTIONS, request.form)
     llm_output = generate_tailored_llm_output(org_profile, results)
 
-    # Top 3 OWASP categories for existing simple AI guidance
     top_categories = results["category_results"][:3]
     ai_guidance = []
 
@@ -51,13 +53,20 @@ def analyze():
             "severity": cat["level"]
         }))
 
-    session["latest_results"] = results
-    session["latest_ai_guidance"] = ai_guidance
-    session["latest_org_profile"] = org_profile
-    session["latest_llm_output"] = llm_output
-
     chart_labels = [c["owasp"] for c in results["category_results"]]
     chart_values = [c["percent"] for c in results["category_results"]]
+
+    # Store full report server-side, not in cookie session
+    report_id = str(uuid.uuid4())
+    REPORT_CACHE[report_id] = {
+        "results": results,
+        "ai_guidance": ai_guidance,
+        "org_profile": org_profile,
+        "llm_output": llm_output
+    }
+
+    # Store only tiny reference in session
+    session["latest_report_id"] = report_id
 
     return render_template(
         "report.html",
@@ -72,13 +81,16 @@ def analyze():
 
 @app.route("/download_pdf")
 def download_pdf():
-    results = session.get("latest_results")
-    ai_guidance = session.get("latest_ai_guidance", [])
-    org_profile = session.get("latest_org_profile", {})
-    llm_output = session.get("latest_llm_output", {})
+    report_id = session.get("latest_report_id")
 
-    if not results:
+    if not report_id or report_id not in REPORT_CACHE:
         return "No report found. Please run an assessment first.", 400
+
+    report_data = REPORT_CACHE[report_id]
+    results = report_data["results"]
+    ai_guidance = report_data["ai_guidance"]
+    org_profile = report_data["org_profile"]
+    llm_output = report_data["llm_output"]
 
     pdf_buffer = build_pdf_report(results, ai_guidance, org_profile, llm_output)
 

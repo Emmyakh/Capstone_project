@@ -6,21 +6,17 @@ except ImportError:
     OpenAI = None
 
 
-def build_prompt(org_profile, results):
-    top_categories = results.get("category_results", [])[:3]
-    top_remediations = results.get("remediation_actions", [])[:5]
+SECTION_HEADINGS = [
+    "Executive Summary",
+    "Business Impact",
+    "Priority Recommendations",
+    "Quick Wins",
+    "Longer-Term Improvements",
+]
 
-    category_text = "\n".join(
-        [f"- {c['owasp']}: {c['percent']}% ({c['level']})" for c in top_categories]
-    )
 
-    remediation_text = "\n".join(
-        [f"- {r['owasp']}: {r['remediation']}" for r in top_remediations]
-    )
-
-    prompt = f"""
-You are a cybersecurity advisor for small and medium-sized businesses.
-
+def _build_org_profile_text(org_profile):
+    return f"""
 Organisation profile:
 - Organisation: {org_profile.get('org_name', 'N/A')}
 - Sector: {org_profile.get('sector', 'N/A')}
@@ -32,19 +28,40 @@ Organisation profile:
 - Processes payments: {org_profile.get('processes_payments', 'N/A')}
 - Uses cloud hosting: {org_profile.get('uses_cloud', 'N/A')}
 - Uses third-party support: {org_profile.get('uses_third_party_support', 'N/A')}
+""".strip()
 
+
+def _build_results_text(results):
+    top_categories = results.get("category_results", [])[:3]
+    top_remediations = results.get("remediation_actions", [])[:5]
+
+    category_text = "\n".join(
+        f"- {c['owasp']}: {c['percent']}% ({c['level']})"
+        for c in top_categories
+    ) or "- No category data available."
+
+    remediation_text = "\n".join(
+        f"- {r['owasp']}: {r['remediation']}"
+        for r in top_remediations
+    ) or "- No remediation priorities available."
+
+    return f"""
 Assessment summary:
-- Overall risk level: {results.get('overall_level')}
-- Overall risk exposure: {results.get('overall_percent')}%
-- ASVS Level 1 compliance proxy: {results.get('asvs_compliance_percent')}%
+- Overall risk level: {results.get('overall_level', 'N/A')}
+- Overall risk exposure: {results.get('overall_percent', 'N/A')}%
+- ASVS Level 1 compliance proxy: {results.get('asvs_compliance_percent', 'N/A')}%
 
 Top OWASP categories:
 {category_text}
 
 Top remediation priorities:
 {remediation_text}
+""".strip()
 
-Return a concise business-friendly response in exactly these sections:
+
+def _build_output_format_instructions():
+    return """
+Return the response in exactly this format:
 
 Executive Summary:
 <2-4 sentences>
@@ -66,8 +83,41 @@ Longer-Term Improvements:
 - item 2
 
 Use simple language suitable for a non-technical SME manager.
-"""
-    return prompt.strip()
+""".strip()
+
+
+def build_prompt(org_profile, results):
+    return f"""
+You are a cybersecurity advisor for small and medium-sized businesses.
+
+{_build_org_profile_text(org_profile)}
+
+{_build_results_text(results)}
+
+{_build_output_format_instructions()}
+""".strip()
+
+
+def build_refinement_prompt(org_profile, results, first_output_text):
+    return f"""
+You are refining a cybersecurity report for a small or medium-sized business.
+
+{_build_org_profile_text(org_profile)}
+
+{_build_results_text(results)}
+
+Initial draft:
+{first_output_text}
+
+Refine the draft so it is:
+1. More specific to the business profile
+2. More practical for an SME
+3. Better prioritised
+4. Clear for a non-technical manager
+5. Concise and professional
+
+{_build_output_format_instructions()}
+""".strip()
 
 
 def fallback_tailored_output(org_profile, results, reason="Fallback mode used."):
@@ -75,7 +125,7 @@ def fallback_tailored_output(org_profile, results, reason="Fallback mode used.")
     remediations = results.get("remediation_actions", [])[:3]
 
     top_category_names = (
-        ", ".join([c["owasp"] for c in top_categories])
+        ", ".join(c["owasp"] for c in top_categories)
         if top_categories
         else "general web security issues"
     )
@@ -103,13 +153,13 @@ def fallback_tailored_output(org_profile, results, reason="Fallback mode used.")
     if not quick_wins:
         quick_wins = [
             "Review the highest-risk categories first.",
-            "Strengthen admin access controls."
+            "Strengthen admin access controls.",
         ]
 
     if not long_term:
         long_term = [
             "Establish regular patching and monitoring.",
-            "Review security logging and incident response readiness."
+            "Review security logging and incident response readiness.",
         ]
 
     return {
@@ -127,7 +177,6 @@ def fallback_tailored_output(org_profile, results, reason="Fallback mode used.")
         "priority_recommendations": top_recommendations,
         "quick_wins": quick_wins,
         "long_term_improvements": long_term,
-        "prompt_used": build_prompt(org_profile, results),
     }
 
 
@@ -139,18 +188,11 @@ def _extract_section(text, heading):
 
     start += len(marker)
 
-    headings = [
-        "Executive Summary:",
-        "Business Impact:",
-        "Priority Recommendations:",
-        "Quick Wins:",
-        "Longer-Term Improvements:",
-    ]
-
     next_positions = []
-    for h in headings:
-        if h != marker:
-            pos = text.find(h, start)
+    for h in SECTION_HEADINGS:
+        marker_h = f"{h}:"
+        if marker_h != marker:
+            pos = text.find(marker_h, start)
             if pos != -1:
                 next_positions.append(pos)
 
@@ -165,6 +207,26 @@ def _extract_bullets(section_text):
         if line.startswith("- "):
             items.append(line[2:].strip())
     return items
+
+
+def _parse_llm_text(final_text):
+    executive_summary = _extract_section(final_text, "Executive Summary")
+    business_impact = _extract_section(final_text, "Business Impact")
+    priority_recommendations = _extract_bullets(
+        _extract_section(final_text, "Priority Recommendations")
+    )
+    quick_wins = _extract_bullets(_extract_section(final_text, "Quick Wins"))
+    long_term_improvements = _extract_bullets(
+        _extract_section(final_text, "Longer-Term Improvements")
+    )
+
+    return {
+        "executive_summary": executive_summary or final_text,
+        "business_impact": business_impact or "Included in generated summary.",
+        "priority_recommendations": priority_recommendations,
+        "quick_wins": quick_wins,
+        "long_term_improvements": long_term_improvements,
+    }
 
 
 def generate_tailored_llm_output(org_profile, results):
@@ -189,61 +251,48 @@ def generate_tailored_llm_output(org_profile, results):
     prompt = build_prompt(org_profile, results)
 
     try:
-        print("[LLM DEBUG] Starting OpenAI call...")
+        print("[LLM DEBUG] Starting OpenAI first-pass call...")
         client = OpenAI(api_key=api_key)
 
-        response = client.responses.create(
+        first_response = client.responses.create(
             model="gpt-4.1-mini",
             input=prompt,
         )
 
-        text_output = getattr(response, "output_text", "")
+        first_text = getattr(first_response, "output_text", "").strip()
 
-        if not text_output:
-            print("[LLM DEBUG] OpenAI call returned empty output_text.")
+        if not first_text:
             return fallback_tailored_output(
                 org_profile,
                 results,
-                "LLM call succeeded but returned empty output_text.",
+                "LLM first-pass returned empty output.",
             )
 
-        text_output = text_output.strip()
-        print("[LLM DEBUG] OpenAI call succeeded.")
+        print("[LLM DEBUG] Starting OpenAI second-pass refinement...")
+        refinement_prompt = build_refinement_prompt(org_profile, results, first_text)
 
-        executive_summary = _extract_section(text_output, "Executive Summary")
-        business_impact = _extract_section(text_output, "Business Impact")
-        priority_recommendations = _extract_bullets(
-            _extract_section(text_output, "Priority Recommendations")
+        refined_response = client.responses.create(
+            model="gpt-4.1-mini",
+            input=refinement_prompt,
         )
-        quick_wins = _extract_bullets(_extract_section(text_output, "Quick Wins"))
-        long_term_improvements = _extract_bullets(
-            _extract_section(text_output, "Longer-Term Improvements")
-        )
+
+        refined_text = getattr(refined_response, "output_text", "").strip()
+        final_text = refined_text if refined_text else first_text
+
+        parsed = _parse_llm_text(final_text)
 
         return {
-            "mode": "llm",
-            "debug_reason": "LLM call succeeded.",
-            "executive_summary": executive_summary or text_output,
-            "business_impact": business_impact or "Included in the generated summary.",
-            "priority_recommendations": priority_recommendations,
-            "quick_wins": quick_wins,
-            "long_term_improvements": long_term_improvements,
-            "prompt_used": prompt,
+            "mode": "llm_refined",
+            "debug_reason": "Two-pass LLM generation succeeded.",
+            **parsed,
         }
 
     except Exception as e:
         error_text = f"{type(e).__name__}: {str(e)}"
         print(f"[LLM DEBUG] OpenAI call failed: {error_text}")
 
-        if "insufficient_quota" in str(e) or "RateLimitError" in type(e).__name__:
-            return fallback_tailored_output(
-                org_profile,
-                results,
-                "LLM unavailable: API quota exceeded. Using fallback mode."
-            )
-
         return fallback_tailored_output(
             org_profile,
             results,
-            f"LLM API call failed: {error_text}"
+            f"LLM API call failed: {error_text}",
         )

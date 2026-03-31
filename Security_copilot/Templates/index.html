@@ -1,118 +1,145 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}">
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SME Security Co-pilot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}">
 </head>
 <body>
-  <h1>SME Web Application Security Co-pilot</h1>
-  <p>Complete the organisation profile first, then answer the security questions below.</p>
+  <div class="container">
+    <div class="hero">
+      <h1>SME Web Application Security Co-pilot</h1>
+      <p>Complete the organisation profile, then answer the security questions to generate a tailored cybersecurity report.</p>
+    </div>
 
-  <form method="POST" action="/analyze">
+    <form method="POST" action="/analyze">
+      <div class="card">
+        <h2>Organisation Profile</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Organisation Name / Label</label>
+            <input type="text" name="org_name" placeholder="Example: ABC Retail Ltd" required>
+          </div>
 
-    <h2>Organisation Profile</h2>
-    <hr>
+          <div class="form-group">
+            <label>Business Sector</label>
+            <select name="sector" required>
+              <option value="">Select sector</option>
+              <option value="E-commerce">E-commerce</option>
+              <option value="Accounting">Accounting</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Logistics">Logistics</option>
+              <option value="Charity">Charity</option>
+              <option value="Real Estate">Real Estate</option>
+              <option value="Education">Education</option>
+              <option value="Technology / SaaS">Technology / SaaS</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
 
-    <p><b>Organisation Name / Label</b></p>
-    <input type="text" name="org_name" placeholder="Example: ABC Retail Ltd" required>
-    <br><br>
+          <div class="form-group">
+            <label>Company Size</label>
+            <select name="size" required>
+              <option value="">Select size</option>
+              <option value="1-10 employees">1-10 employees</option>
+              <option value="11-50 employees">11-50 employees</option>
+              <option value="51-250 employees">51-250 employees</option>
+              <option value="251+ employees">251+ employees</option>
+            </select>
+          </div>
 
-    <p><b>Business Sector</b></p>
-    <select name="sector" required>
-      <option value="">Select sector</option>
-      <option value="E-commerce">E-commerce</option>
-      <option value="Accounting">Accounting</option>
-      <option value="Healthcare">Healthcare</option>
-      <option value="Logistics">Logistics</option>
-      <option value="Charity">Charity</option>
-      <option value="Real Estate">Real Estate</option>
-      <option value="Education">Education</option>
-      <option value="Technology / SaaS">Technology / SaaS</option>
-      <option value="Other">Other</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Do you have an internal IT team?</label>
+            <select name="it_team" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
 
-    <p><b>Company Size</b></p>
-    <select name="size" required>
-      <option value="">Select size</option>
-      <option value="1-10 employees">1-10 employees</option>
-      <option value="11-50 employees">11-50 employees</option>
-      <option value="51-250 employees">51-250 employees</option>
-      <option value="251+ employees">251+ employees</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Do you have dedicated security staff?</label>
+            <select name="security_staff" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
 
-    <p><b>Do you have an internal IT team?</b></p>
-    <select name="it_team" required>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Web Application Type</label>
+            <select name="web_app_type" required>
+              <option value="">Select type</option>
+              <option value="Public website">Public website</option>
+              <option value="Customer portal">Customer portal</option>
+              <option value="E-commerce platform">E-commerce platform</option>
+              <option value="Booking system">Booking system</option>
+              <option value="Internal admin portal">Internal admin portal</option>
+              <option value="SaaS application">SaaS application</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
 
-    <p><b>Do you have dedicated security staff?</b></p>
-    <select name="security_staff" required>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Does the application store customer data?</label>
+            <select name="stores_customer_data" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
 
-    <p><b>Web Application Type</b></p>
-    <select name="web_app_type" required>
-      <option value="">Select type</option>
-      <option value="Public website">Public website</option>
-      <option value="Customer portal">Customer portal</option>
-      <option value="E-commerce platform">E-commerce platform</option>
-      <option value="Booking system">Booking system</option>
-      <option value="Internal admin portal">Internal admin portal</option>
-      <option value="SaaS application">SaaS application</option>
-      <option value="Other">Other</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Does the application process online payments?</label>
+            <select name="processes_payments" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
 
-    <p><b>Does the application store customer data?</b></p>
-    <select name="stores_customer_data" required>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Does the organisation use cloud hosting?</label>
+            <select name="uses_cloud" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
 
-    <p><b>Does the application process online payments?</b></p>
-    <select name="processes_payments" required>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <br><br>
+          <div class="form-group">
+            <label>Does the organisation rely on third-party web developers or managed providers?</label>
+            <select name="uses_third_party_support" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-    <p><b>Does the organisation use cloud hosting?</b></p>
-    <select name="uses_cloud" required>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <br><br>
+      {% for section, qs in sections.items() %}
+      <div class="card">
+        <h2>{{ section }}</h2>
 
-    <p><b>Does the organisation rely on third-party web developers or managed providers?</b></p>
-    <select name="uses_third_party_support" required>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <br><br>
-
-    {% for section, qs in sections.items() %}
-      <h2>{{ section }}</h2>
-      <hr>
-
-      {% for q in qs %}
-        <p><b>{{ q.id }}</b> — {{ q.text }}</p>
-        <select name="{{ q.id }}" required>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-          <option value="not_sure" selected>Not Sure</option>
-          <option value="managed">Managed by provider</option>
-        </select>
-        <br><br>
+        {% for q in qs %}
+        <div class="question-block">
+          <label for="{{ q.id }}">
+            <span class="question-id">{{ q.id }}</span> — {{ q.text }}
+          </label>
+          <select name="{{ q.id }}" id="{{ q.id }}" required>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+            <option value="not_sure" selected>Not Sure</option>
+            <option value="managed">Managed by provider</option>
+          </select>
+        </div>
+        {% endfor %}
+      </div>
       {% endfor %}
-    {% endfor %}
 
-    <button type="submit">Generate Security Report</button>
-  </form>
+      <div class="action-row">
+        <button type="submit">Generate Security Report</button>
+      </div>
+    </form>
+  </div>
 </body>
 </html>
